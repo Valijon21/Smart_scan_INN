@@ -4,7 +4,7 @@
 ![Tkinter](https://img.shields.io/badge/GUI-Tkinter-success.svg)
 ![OCR](https://img.shields.io/badge/Technology-OCR-orange.svg)
 
-**SmartScan INN** (shuningdek, **INN TOp**) – bu kompyuter ekranidan rasmga olish orqali matnlarni tezkor o'quvchi va tahlil qiluvchi maxsus, aqlli dastur. Ushbu dastur ilg'or OCR (Optik Belgilarni Aniqlash) texnologiyasidan foydalangan holda tashkilotlarning STIR (INN), rahbar ismi (FISH) va telefon raqamlarini avtomatik ravishda aniqlaydi.
+**SmartScan INN** (shuningdek, **INN TOp**) – bu kompyuter ekranidan rasmga olish orqali matnlarni tezkor o'quvchi va tahlil qiluvchi maxsus, aqlli dastur. Ushbu dastur ilg'or **EasyOCR** (Optik Belgilarni Aniqlash) texnologiyasidan foydalangan holda tashkilotlarning STIR (INN), rahbar ismi (FISH) va telefon raqamlarini avtomatik ravishda aniqlaydi. Dastur endilikda oflayn rejimda (internetsiz ham) mutlaqo barqaror ishlay oladi!
 
 ---
 
@@ -22,8 +22,10 @@
     *   Rasmlar va ularning matn fayllari aniqlangan ma'lumotlar bilan nomlanib, avtomatik ravishda (masalan: `123456789_TashkilotNomi_AliyevAli_Tel-998901234567.png`) saqlanadi.
 *   📜 **To'liq Tarix (History) Oynasi:**
     *   Oldin olingan barcha rasmlar va ulardan o'qilgan ma'lumotlarni dasturning "Tarix" bo'limidan tezkor topish, ko'rish, va deatallarni nusxalash mumkin.
-*   🔎 **Tezkor Qidiruv:**
-    *   Dasturning o'zidan tashkilot nomi yoki STIR (INN) raqami orqali maxsus ma'lumotlar bazasidan to'g'ridan-to'g'ri qidirish imkoniyati mavjud. O'xshash nomlar ham qo'llab-quvvatlanadi.
+*   🔎 **Tezkor Qidiruv va Interaktiv Oyna:**
+    *   Dasturning o'zidan tashkilot nomi yoki STIR (INN) raqami orqali maxsus ma'lumotlar bazasidan to'g'ridan-to'g'ri qidirish imkoniyati mavjud. Qidiruv va OCR natijalari maxsus professional oynada chiqadi hamda yagona **"📋 Nusxalash"** tugmasi orqali barcha ma'lumotlarni xotiraga olish mumkin.
+*   ⚡ **Mustahkamlik va Logging (Kuzatuv):**
+    *   Xatoliklar va dastur ishlash jarayonlari to'liq `debug.log` fayliga tushib boradi. Bu orqali qayerda qanday muammo chiqqanini bemalol tahlil qilish imkoniyati yaratilgan.
 
 ---
 
