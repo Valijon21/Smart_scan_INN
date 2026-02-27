@@ -21,6 +21,7 @@ from datetime import datetime
 
 class ScreenshotApp:
     def __init__(self, root):
+        logger.info("GUI oyna (ScreenshotApp) initsializatsiyasi boshlandi.")
         self.root = root
         self.root.title("SMART SCANER TEXT & INN")
         self.root.geometry("1200x900")
@@ -100,7 +101,9 @@ class ScreenshotApp:
 
     def manual_search(self):
         query = self.manual_inn_entry.get().strip()
+        logger.info(f"Yangi qidiruv so'rovi kiritildi: '{query}'")
         if not query:
+            logger.warning("Bo'sh so'rov yuborildi. Ogohlantirish ko'rsatilmoqda.")
             messagebox.showwarning("Diqqat", "Iltimos, INN yoki Tashkilot nomini kiriting!")
             return
         
@@ -116,13 +119,11 @@ class ScreenshotApp:
 
             if len(results) == 1:
                 res = results[0]
-                # Display with larger font in a custom message box if possible, but standard messagebox font is fixed.
-                # However, the user asked for "shriftlanri kattalashtir" for the result dialog specifically.
                 person = res.get('person', '')
                 phone = res.get('phone', '')
                 phone_str = f"Tel: {phone}" if phone else "Tel: Nomer yo'q"
                 msg = f"Topildi:\n\nINN: {res['inn']}\nTashkilot: {res['name']}\nRahbar: {person}\n{phone_str}"
-                messagebox.showinfo("Natija", msg)
+                self.show_custom_search_result("Natija", msg)
             else:
                 # Multiple results
                 msg = f"'{query}' bo'yicha {len(results)} ta tashkilot topildi:\n\n"
@@ -135,13 +136,50 @@ class ScreenshotApp:
                 if len(results) > 10:
                     msg += f"\n... va yana {len(results)-10} ta."
                     
-                messagebox.showinfo("Qidiruv Natijasi", msg)
+                self.show_custom_search_result("Qidiruv Natijasi", msg)
+                logger.info(f"Qidiruv natijalari ko'rsatildi, topshirilganlar soni: {len(results)} ta.")
                 
         except Exception as e:
-            logger.error(f"Search error: {e}")
+            logger.exception(f"Qidiruvda kutilmagan xatolik yuz berdi: {e}")
             messagebox.showerror("Xato", f"Qidirishda xatolik: {e}")
 
+    def show_custom_search_result(self, title, msg):
+        """Displays a custom dialog for search results with larger font and copy button."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.geometry("700x500")
+        dialog.configure(bg=BG_COLOR)
+        dialog.lift()
+        dialog.attributes('-topmost', True)
+        
+        # Header
+        tk.Label(dialog, text="🔍 " + title, font=("Segoe UI", 20, "bold"), bg=BG_COLOR, fg="#0984e3").pack(pady=15)
+        
+        # Text Area
+        text_widget = tk.Text(dialog, font=("Segoe UI", 16), bg="#2d3436", fg=FG_COLOR, wrap="word")
+        
+        # Buttons Frame
+        btn_frame = tk.Frame(dialog, bg=BG_COLOR)
+        btn_frame.pack(side="bottom", pady=15, fill="x")
+        
+        center_frame = tk.Frame(btn_frame, bg=BG_COLOR)
+        center_frame.pack(anchor="center")
+        
+        def copy_to_clipboard():
+            dialog.clipboard_clear()
+            dialog.clipboard_append(text_widget.get("1.0", tk.END).strip())
+            dialog.update()
+            messagebox.showinfo("Nusxa olindi", "Ma'lumotlar xotiraga (clipboard) nusxalandi!", parent=dialog)
+        
+        ModernButton(center_frame, "📋 Nusxalash", copy_to_clipboard, width=20, height=2, bg="#00b894").pack(side="left", padx=10)
+        ModernButton(center_frame, "Yopish", dialog.destroy, width=15, height=2, bg="#636e72").pack(side="left", padx=10)
+        
+        # Content
+        text_widget.pack(side="top", fill="both", expand=True, padx=20, pady=10)
+        text_widget.insert("1.0", msg)
+
     def capture_full(self):
+        logger.info("To'liq ekran suratini olish jarayoni boshlandi (F8). Dastur oynasi yashirilmoqda...")
         self.root.withdraw()
         try:
             # Small delay to ensure window is gone
@@ -152,18 +190,22 @@ class ScreenshotApp:
 
     def _perform_full_capture(self):
         try:
+            logger.debug("To'liq ekran surati olinmoqda (ImageGrab).")
             img = ImageGrab.grab(all_screens=True)
             self.on_capture(img)
         except Exception as e:
+            logger.exception(f"To'liq ekran suratini olishda xatolik yuz berdi: {e}")
             self.show_error(e)
             self.root.deiconify()
 
     def capture_region(self):
+        logger.info("Mintaqaviy ekran suratini kesib olish jarayoni boshlandi (F9).")
         self.root.withdraw()
         # Give time for withdraw
         self.root.after(200, self.snipper.start_capture)
 
     def capture_text_only(self):
+        logger.info("Rasmdan matnni (OCR) maxsus formatda o'qib olish jarayoni boshlandi.")
         self.root.withdraw()
         # Trigger snipper but with a different callback
         self.root.after(200, lambda: self._start_text_snipper())
@@ -182,27 +224,32 @@ class ScreenshotApp:
 
     def on_text_capture(self, image):
         """Callback when an image is captured specifically for text extraction."""
+        logger.info("Matn uchun ekran surati muvaffaqiyatli olindi, fon (background) jarayoniga o'tkazilmoqda.")
         self.root.deiconify() # Restore main window
         import threading
         threading.Thread(target=self._process_text_bg, args=(image,), daemon=True).start()
 
     def _process_text_bg(self, image):
+        logger.info("Matnni orqa fonda rasm orqali o'qish (OCR) jarayoni boshlandi.")
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             filename = f"TextSnap_{timestamp}.png"
             folder = get_save_folder()
             save_path = os.path.join(folder, filename)
             image.save(save_path)
+            logger.debug(f"Vaqtinchalik matn rasm holatida saqlandi: {save_path}")
             
             from app.ocr_service import extract_text_from_image
+            logger.debug("OCR service ishga tushirilmoqda...")
             result_text = extract_text_from_image(save_path)
             
             # Delete the temporary image if you don't want to keep text snaps
             # try: os.remove(save_path) except: pass
             
+            logger.info("OCR matn o'qishi muvaffaqiyatli yakunlandi. Natija oynasiga chiqarilmoqda.")
             self.root.after(0, lambda: self.show_text_result_dialog(result_text))
         except Exception as e:
-            logger.error(f"Error in text bg processing: {e}")
+            logger.exception(f"Error in text bg processing: {e}")
             self.root.after(0, lambda: self.show_error(e))
 
     def show_text_result_dialog(self, text):
@@ -248,6 +295,7 @@ class ScreenshotApp:
 
     def on_capture(self, image):
         """Callback when an image is captured."""
+        logger.info("Surat muvaffaqiyatli olindi. Tahlil qilish uchun orqa fonga yuborilmoqda.")
         self.root.deiconify() # Restore main window
         
         # O'qish jarayoni vaqtida dastur qotib qolmasligi uchun alohida potokda ishlatamiz
@@ -259,6 +307,7 @@ class ScreenshotApp:
         threading.Thread(target=self._process_image_bg, args=(image, autosave_enabled), daemon=True).start()
 
     def _process_image_bg(self, image, autosave_enabled):
+        logger.info(f"Orqa fonda rasm muhokama qilinmoqda. (Autosave yoqilgan: {autosave_enabled})")
         # 1. Autosave
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -388,11 +437,12 @@ class ScreenshotApp:
                 # Show Result Dialog
                 self.root.after(100, lambda: self.show_result_dialog(inn, company_name_found, company_person_found, company_phone_found, new_path))
         except Exception as e:
-            logger.error(f"Error in bg processing: {e}")
+            logger.exception(f"Error in bg processing: {e}")
             self.root.after(0, lambda: self.show_error(e))
 
     def show_result_dialog(self, inn, org_name, person_name, phone, file_path):
         """Displays a custom dialog with OCR results. Refactored for larger fonts."""
+        logger.info(f"Natija oynasi ko'rsatilmoqda... INN={inn}, Tashkilot={org_name}, File={file_path}")
         try:
             dialog = tk.Toplevel(self.root)
             dialog.title("Natija")
@@ -473,13 +523,22 @@ class ScreenshotApp:
                 except Exception as ex:
                     logger.error(f"Failed to open editor: {ex}")
             
+            def copy_ocr_details():
+                dialog.clipboard_clear()
+                phone_str = phone if phone else "Nomer yo'q"
+                copy_text = f"INN: {inn}\nTashkilot: {org_name}\nRahbar: {person_name}\nTel: {phone_str}\nFayl: {os.path.basename(file_path)}"
+                dialog.clipboard_append(copy_text)
+                dialog.update()
+                messagebox.showinfo("Nusxa olindi", "Ma'lumotlar xotiraga nusxalandi!", parent=dialog)
+
             # Button sizes also increased? Maybe keep them standard but larger text
-            ModernButton(btn_frame, "✏️ Tahrirlash", on_edit, width=20, height=2, bg="#6c5ce7").pack(side="left", padx=10)
-            ModernButton(btn_frame, "📂 Papkani Ochish", open_folder, width=20, height=2, bg="#0984e3").pack(side="left", padx=10)
+            ModernButton(btn_frame, "📋 Nusxalash", copy_ocr_details, width=15, height=2, bg="#00b894").pack(side="left", padx=10)
+            ModernButton(btn_frame, "✏️ Tahrirlash", on_edit, width=15, height=2, bg="#6c5ce7").pack(side="left", padx=10)
+            ModernButton(btn_frame, "📂 Papkani Ochish", open_folder, width=18, height=2, bg="#0984e3").pack(side="left", padx=10)
             ModernButton(btn_frame, "Yopish", dialog.destroy, width=15, height=2, bg="#636e72").pack(side="left", padx=10)
 
         except Exception as e:
-            logger.error(f"Error showing dialog: {e}")
+            logger.exception(f"Error showing dialog: {e}")
                 # But currently Editor is initialized with just Image.
                 # If we want Editor to know the filename, we should have passed it or updated it.
                 # For now, it's fine. editor 'save' asks for path usually or we can improve it later.
@@ -488,7 +547,7 @@ class ScreenshotApp:
             raise
         except Exception as e:
             print(f"Autosave/OCR failed: {e}")
-            logger.error(f"Autosave/OCR failed: {e}")
+            logger.exception(f"Autosave/OCR bg jarayonida to'liq xatolik qaytdi: {e}")
 
         # 2. Open Editor (This was moved to the top of the try block)
 
@@ -503,6 +562,7 @@ class ScreenshotApp:
 
     def show_history(self):
         """Displays a history window of previously saved images and their parse results."""
+        logger.info("Foydalanuvchi Tarix (History) oynasini ochdi.")
         history_dialog = tk.Toplevel(self.root)
         history_dialog.title("Tarix (History)")
         history_dialog.geometry("1100x800")
@@ -595,7 +655,7 @@ class ScreenshotApp:
                 self.history_listbox.insert(tk.END, display_name)
                 
         except Exception as e:
-            logger.error(f"Failed to load history: {e}")
+            logger.exception(f"Tarix(History) ro'yxatini yuklashda xatolik yuz berdi: {e}")
             self.history_listbox.insert(tk.END, "Xatolik yuz berdi")
 
     def _on_history_select(self, event):

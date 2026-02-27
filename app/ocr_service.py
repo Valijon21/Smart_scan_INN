@@ -9,6 +9,26 @@ logger = logging.getLogger("INN_TOp.OCR")
 import urllib.request
 import urllib.parse
 import urllib.error
+import traceback
+
+# Lazy load EasyOCR reader so it doesn't freeze the app on startup
+_EASYOCR_READER = None
+
+def get_easyocr_reader():
+    global _EASYOCR_READER
+    if _EASYOCR_READER is None:
+        try:
+            import easyocr
+            logger.info("EasyOCR modelini yuklash boshlandi (bu biroz vaqt olishi mumkin)...")
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                _EASYOCR_READER = easyocr.Reader(['ru', 'en'])
+            logger.info("EasyOCR modeli muvaffaqiyatli yuklandi.")
+        except ImportError:
+            logger.warning("easyocr kutubxonasi topilmadi. Mahalliy (Local) OCR ishlashida xato bo'lishi mumkin.")
+            return None
+    return _EASYOCR_READER
 
 def extract_text_from_image_online(image_path, api_key='helloworld'):
     """
@@ -81,32 +101,26 @@ def extract_text_from_image_online(image_path, api_key='helloworld'):
     return ""
 
 def extract_text_from_image(image_path):
-    """Executes the PowerShell OCR script to extract text. Falls back to Online."""
+    """Executes the Local EasyOCR python package to extract text. Falls back to Online if failed."""
     local_text = ""
     
-    # 1. Try Local PowerShell
-    logger.info(f"Starting Local OCR for image: {image_path}")
+    # 1. Try Local EasyOCR
+    logger.info(f"Mahalliy (Local) OCR orqali rasm o'qilmoqda: {image_path}")
     try:
-        script_path = os.path.join(os.path.dirname(__file__), "ocr.ps1")
-        cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, image_path]
-        
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        
-        logger.debug(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo)
-        
-        raw_output = result.stdout.strip()
-        # Filter debug lines
-        local_text = "\n".join([line for line in raw_output.splitlines() if not line.strip().startswith("DEBUG:")])
-        
-        if local_text and "Error:" not in local_text:
-             logger.debug(f"OCR Raw Result (filtered):\n{local_text}")
-             return local_text
-             
-        logger.warning("Local OCR returned empty or error. Trying fallback...")
+        reader = get_easyocr_reader()
+        if reader is not None:
+            results = reader.readtext(image_path, detail=0)
+            local_text = " ".join(results)
+            
+            if local_text.strip():
+                logger.debug(f"Local OCR Result:\n{local_text}")
+                return local_text
+            else:
+                logger.warning("Local OCR bo'sh natija qaytardi. Fallback qilinmoqda...")
+        else:
+            logger.warning("Local OCR modeli yuklanmadi. Fallback qilinmoqda...")
     except Exception as e:
-        logger.exception("OCR Execution Error")
+        logger.exception("Mahalliy (Local) OCR ishlashda xatolikka yo'l qo'ydi.")
 
     # 2. Fallback to Online
     return extract_text_from_image_online(image_path)
