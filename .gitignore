@@ -1,0 +1,30 @@
+# Python ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+
+# Logs
+*.log
+
+# Build & Dist ignores for PyInstaller
+build/
+dist/
+*.spec
+
+# Application specific
+ekran_rasimlar/*
+!ekran_rasimlar/.gitkeep
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
