@@ -1,27 +1,50 @@
-# SmartScan INN (INN TOp)
+# 🔍 SmartScan TEXT & INN (INN TOp)
 
-SmartScan INN (shuningdek, **INN TOp**) – kompyuter ekranidan rasmga olish orqali matnlarni tezkor o'quvchi va tahlil qiluvchi maxsus dastur. Ushbu dastur OCR texnologiyasidan foydalangan holda tashkilotlarning STIR (INN), rahbar ismi (FISH) va telefon raqamlarini avtomatik ravishda aniqlaydi.
+![Python](https://img.shields.io/badge/Python-3.x-blue.svg)
+![Tkinter](https://img.shields.io/badge/GUI-Tkinter-success.svg)
+![OCR](https://img.shields.io/badge/Technology-OCR-orange.svg)
 
-## Asosiy Imkoniyatlar
-- **F8 va F9 Tugmalari orqali Tezkor Rasmga Olish:**  
-  F8 tugmasi orqali butun ekranni va F9 tugmasi orqali ekranning kerakli qismini kesib olish imkoniyati.
-- **Avtomatik OCR va Tahlil:**  
-  Olingan rasmdagi matnlar avtomatik yozma shaklga o'giriladi (TXT) hamda tashkilot ma'lumotlari aniqlanadi.
-- **Aqlli Saqlash:**  
-  Rasmlar va ularning matn fayllari aniqlangan ma'lumotlar bilan nomlanib, avtomatik ravishda (`INN_Tashkilot_FISH_Tel.png`) `ekran_rasimlar` papkasida saqlanadi.
-- **Tarixni Ko'rish (History):**  
-  Oldin olingan barcha rasmlar va ma'lumotlarni dasturning "Tarix" oynasidan tezda topish, ko'rish va o'qish mumkin.
-- **Qidiruv Tizimi:**  
-  Dasturning o'zidan tashkilot nomi yoki STIR (INN) orqali bazadan qidirish imkoniyati mavjud.
+**SmartScan INN** (shuningdek, **INN TOp**) – bu kompyuter ekranidan rasmga olish orqali matnlarni tezkor o'quvchi va tahlil qiluvchi maxsus, aqlli dastur. Ushbu dastur ilg'or OCR (Optik Belgilarni Aniqlash) texnologiyasidan foydalangan holda tashkilotlarning STIR (INN), rahbar ismi (FISH) va telefon raqamlarini avtomatik ravishda aniqlaydi.
 
-## Muallif Haqida
-Dastur **Valijon Ergashev** tomonidan ishlab chiqilgan va dasturlashtirilgan.
-- **Dasturchi:** Valijon Ergashev
-- **Aloqa (Telefon):** +998 77 342 33 21
+---
 
-## Qanday Ishga Tushiriladi?
-Dasturni ishga tushirish uchun Python o'rnatilgan bo'lishi kerak. Barcha kerakli modullarni o'rnatgach, quyidagi buyruqni bering:
+## ✨ Asosiy Imkoniyatlar
+
+*   🖥️ **To'liq va Qisman Ekran Rasmga Olish (F8 / F9):**
+    *   **F8** tugmasi orqali butun ekranni tezkor rasmga oling.
+    *   **F9** tugmasi orqali ekranning faqat kerakli qismini kesib oling.
+*   📝 **Sof Matnni Ajratish (OCR):**
+    *   Maxsus tugma orqali rasmdan faqat matnni o'qib olib, undan xotiraga nusxa (copy) olish imkoniyati.
+*   🤖 **Avtomatik Tahlil va Qidiruv:**
+    *   Olingan rasmdagi matnlar avtomat ravishda yozma shaklga o'giriladi (`.txt`).
+    *   Tashkilotlarning STIR (INN), rahbar ismi va telefon raqamlari darhol ekranda aniqlanadi.
+*   💾 **Aqlli Saqlash Tizimi:**
+    *   Rasmlar va ularning matn fayllari aniqlangan ma'lumotlar bilan nomlanib, avtomatik ravishda (masalan: `123456789_TashkilotNomi_AliyevAli_Tel-998901234567.png`) saqlanadi.
+*   📜 **To'liq Tarix (History) Oynasi:**
+    *   Oldin olingan barcha rasmlar va ulardan o'qilgan ma'lumotlarni dasturning "Tarix" bo'limidan tezkor topish, ko'rish, va deatallarni nusxalash mumkin.
+*   🔎 **Tezkor Qidiruv:**
+    *   Dasturning o'zidan tashkilot nomi yoki STIR (INN) raqami orqali maxsus ma'lumotlar bazasidan to'g'ridan-to'g'ri qidirish imkoniyati mavjud. O'xshash nomlar ham qo'llab-quvvatlanadi.
+
+---
+
+## 🛠️ O'rnatish va Ishga Tushirish
+
+Dasturni ishga tushirish uchun kompyuteringizda Python dasturlash tili o'rnatilgan bo'lishi kerak. Kerakli modullarni o'rnatganingizdan so'ng, quyidagi buyruq orqali dasturni ishga tushiring:
+
 ```bash
 python main.py
 ```
-Yoki `.exe` faylga ogirilgan ko'rinishdan foydalanish mumkin (`Run_App.bat` orqali).
+
+💡 *Eslatma: Yoki Windows uchun mahsus tayyorlangan `.exe` fayldan foydalanishingiz mumkin (`Run_App.bat` orqali).*
+
+---
+
+## 👨‍💻 Muallif Haqida
+
+Dastur **Valijon Ergashev** tomonidan loyihalashtirilgan va ishlab chiqilgan.
+
+*   👤 **Dasturchi:** Valijon Ergashev
+*   📞 **Aloqa (Telefon):** +998 77 342 33 21
+
+---
+> 🌟 *Loyihadan mamnun bo'lsangiz, uni kuzatib borishni va qo'llab-quvvatlashni unutmang!*

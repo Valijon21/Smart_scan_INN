@@ -4,6 +4,7 @@ from PIL import ImageGrab
 import sys
 import os
 import ctypes # Added for global hotkeys
+import subprocess
 
 # Ensure we can import from app
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +22,7 @@ from datetime import datetime
 class ScreenshotApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("INN TOp - Screenshot Tool")
+        self.root.title("SMART SCANER TEXT & INN")
         self.root.geometry("1200x900")
         self.root.resizable(False, False)
         
@@ -63,16 +64,17 @@ class ScreenshotApp:
 
     def _init_ui(self):
         # Header
-        header = tk.Label(self.root, text="INN TOp Capture", font=("Segoe UI", 24, "bold"), bg=BG_COLOR, fg=FG_COLOR)
+        header = tk.Label(self.root, text="SMART SCANER TEXT & INN", font=("Segoe UI", 24, "bold"), bg=BG_COLOR, fg=FG_COLOR)
         header.pack(pady=40)
         
         # Buttons
         btn_frame = tk.Frame(self.root, bg=BG_COLOR)
         btn_frame.pack(pady=10)
         
-        ModernButton(btn_frame, "To'liq Ekran (F8)", self.capture_full, width=40,height=3).pack(side="left", padx=20, pady=10)
-        ModernButton(btn_frame, "Kesish (Region) (F9)", self.capture_region, width=40,height=3, bg="#6c5ce7").pack(side="left", padx=20, pady=10)
-        ModernButton(btn_frame, "Tarix (History)", self.show_history, width=30,height=3, bg="#f39c12").pack(side="left", padx=20, pady=10)
+        ModernButton(btn_frame, "To'liq Ekran (F8)", self.capture_full, width=30,height=3).pack(side="left", padx=10, pady=10)
+        ModernButton(btn_frame, "Kesish (Region) (F9)", self.capture_region, width=30,height=3, bg="#6c5ce7").pack(side="left", padx=10, pady=10)
+        ModernButton(btn_frame, "Tarix (History)", self.show_history, width=25,height=3, bg="#f39c12").pack(side="left", padx=10, pady=10)
+        ModernButton(btn_frame, "Rasm Matn (OCR)", self.capture_text_only, width=25,height=3, bg="#00cec9").pack(side="left", padx=10, pady=10)
         
         # Options
         self.autosave_var = tk.BooleanVar(value=True)
@@ -161,9 +163,102 @@ class ScreenshotApp:
         # Give time for withdraw
         self.root.after(200, self.snipper.start_capture)
 
+    def capture_text_only(self):
+        self.root.withdraw()
+        # Trigger snipper but with a different callback
+        self.root.after(200, lambda: self._start_text_snipper())
+
+    def _start_text_snipper(self):
+        # Temporarily change the callback of the snipper
+        original_callback = self.snipper.on_capture
+        
+        def text_callback(image):
+            # Restore original callback for Future F9 presses
+            self.snipper.on_capture = original_callback
+            self.on_text_capture(image)
+            
+        self.snipper.on_capture = text_callback
+        self.snipper.start_capture()
+
+    def on_text_capture(self, image):
+        """Callback when an image is captured specifically for text extraction."""
+        self.root.deiconify() # Restore main window
+        import threading
+        threading.Thread(target=self._process_text_bg, args=(image,), daemon=True).start()
+
+    def _process_text_bg(self, image):
+        try:
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            filename = f"TextSnap_{timestamp}.png"
+            folder = get_save_folder()
+            save_path = os.path.join(folder, filename)
+            image.save(save_path)
+            
+            from app.ocr_service import extract_text_from_image
+            result_text = extract_text_from_image(save_path)
+            
+            # Delete the temporary image if you don't want to keep text snaps
+            # try: os.remove(save_path) except: pass
+            
+            self.root.after(0, lambda: self.show_text_result_dialog(result_text))
+        except Exception as e:
+            logger.error(f"Error in text bg processing: {e}")
+            self.root.after(0, lambda: self.show_error(e))
+
+    def show_text_result_dialog(self, text):
+        """Displays a dialog with only the extracted text and a copy button."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("O'qilgan Matn (OCR)")
+        dialog.geometry("800x600")
+        dialog.configure(bg=BG_COLOR)
+        dialog.lift()
+        dialog.attributes('-topmost', True)
+        
+        tk.Label(dialog, text="📝 Rasmdan o'qilgan matn", font=("Segoe UI", 20, "bold"), bg=BG_COLOR, fg="#00cec9").pack(pady=15)
+        
+        # We must define the widgets first to use them in the copy function later, wait, actually we need the text_widget for the copy function.
+        text_widget = tk.Text(dialog, font=("Segoe UI", 16), bg="#2d3436", fg=FG_COLOR, wrap="word")
+        
+        # Function to copy text
+        def copy_to_clipboard():
+            dialog.clipboard_clear()
+            dialog.clipboard_append(text_widget.get("1.0", tk.END).strip())
+            dialog.update() # Required to finalize clipboard on Windows
+            messagebox.showinfo("Nusxa olindi", "Matn xotiraga (clipboard) nusxalandi!", parent=dialog)
+        
+        # Text Area at the top, buttons at the bottom: 
+        # Pack buttons FIRST with side="bottom" so they are never pushed out of view
+        btn_frame = tk.Frame(dialog, bg=BG_COLOR)
+        btn_frame.pack(side="bottom", pady=15, fill="x")
+        
+        # Center the buttons inside btn_frame
+        center_frame = tk.Frame(btn_frame, bg=BG_COLOR)
+        center_frame.pack(anchor="center")
+        
+        ModernButton(center_frame, "📋 Nusxalash", copy_to_clipboard, width=20, height=2, bg="#00b894").pack(side="left", padx=10)
+        ModernButton(center_frame, "Yopish", dialog.destroy, width=15, height=2, bg="#636e72").pack(side="left", padx=10)
+        
+        # Now pack the text area, so it takes only the *remaining* space
+        text_widget.pack(side="top", fill="both", expand=True, padx=20, pady=10)
+        
+        if text.strip():
+            text_widget.insert("1.0", text)
+        else:
+            text_widget.insert("1.0", "Matn topilmadi yoki o'qib bo'lmadi.")
+
     def on_capture(self, image):
         """Callback when an image is captured."""
         self.root.deiconify() # Restore main window
+        
+        # O'qish jarayoni vaqtida dastur qotib qolmasligi uchun alohida potokda ishlatamiz
+        import threading
+        # We need a small loading indicator or just let it process in bg. 
+        # The user will see UI unfreeze immediately.
+        # Ensure we read Tkinter variables in the main thread!
+        autosave_enabled = self.autosave_var.get()
+        threading.Thread(target=self._process_image_bg, args=(image, autosave_enabled), daemon=True).start()
+
+    def _process_image_bg(self, image, autosave_enabled):
         # 1. Autosave
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -179,7 +274,7 @@ class ScreenshotApp:
             # self.open_editor(image) # Editor expects PIL Image object, not path
             
             # --- AUTOSAVE & RENAME LOGIC ---
-            if self.autosave_var.get():
+            if autosave_enabled:
                 logger.info("Autosave/Rename Triggered")
                 
                 # --- OCR CHECK ---
@@ -293,8 +388,8 @@ class ScreenshotApp:
                 # Show Result Dialog
                 self.root.after(100, lambda: self.show_result_dialog(inn, company_name_found, company_person_found, company_phone_found, new_path))
         except Exception as e:
-            logger.error(f"Error in on_capture: {e}")
-            self.show_error(e)
+            logger.error(f"Error in bg processing: {e}")
+            self.root.after(0, lambda: self.show_error(e))
 
     def show_result_dialog(self, inn, org_name, person_name, phone, file_path):
         """Displays a custom dialog with OCR results. Refactored for larger fonts."""
@@ -455,9 +550,17 @@ class ScreenshotApp:
         # Action Buttons
         btn_frame = tk.Frame(right_frame, bg=BG_COLOR)
         btn_frame.pack(pady=10)
+
+        # Function for copy to clipboard
+        def copy_details():
+            history_dialog.clipboard_clear()
+            history_dialog.clipboard_append(self.details_text.get("1.0", tk.END).strip())
+            history_dialog.update()
+            messagebox.showinfo("Nusxa olindi", "Ma'lumotlar xotiraga nusxalandi!", parent=history_dialog)
         
-        ModernButton(btn_frame, "Ochish (Folder)", lambda: self._open_history_folder(self.history_files), width=20, height=1, bg="#0984e3").pack(side="left", padx=5)
-        ModernButton(btn_frame, "Matn (TXT)", lambda: self._open_history_txt(self.history_files), width=20, height=1, bg="#00b894").pack(side="left", padx=5)
+        ModernButton(btn_frame, "Ochish (Folder)", lambda: self._open_history_folder(self.history_files), width=15, height=1, bg="#0984e3").pack(side="left", padx=5)
+        ModernButton(btn_frame, "Matn (TXT)", lambda: self._open_history_txt(self.history_files), width=15, height=1, bg="#00b894").pack(side="left", padx=5)
+        ModernButton(btn_frame, "📋 Nusxalash", copy_details, width=15, height=1, bg="#6c5ce7").pack(side="left", padx=5)
         
         # Load Files
         self.history_files = [] # Store full paths
@@ -473,16 +576,22 @@ class ScreenshotApp:
         
         # Get png files, sort by modify time descending
         try:
-            files = [os.path.join(folder, f) for f in os.listdir(folder) if f.lower().endswith(".png")]
-            files.sort(key=os.path.getmtime, reverse=True)
+            files = [os.path.join(folder, f) for f in os.listdir(folder) if f.lower().endswith(".png") and "TextSnap" not in f]
+            text_files = [os.path.join(folder, f) for f in os.listdir(folder) if f.lower().endswith(".png") and "TextSnap" in f]
             
-            for file_path in files:
+            # Combine them, we can sort them all by time
+            all_files = files + text_files
+            all_files.sort(key=os.path.getmtime, reverse=True)
+            
+            for file_path in all_files:
                 self.history_files.append(file_path)
                 filename = os.path.basename(file_path)
                 # Show simpler name in list
                 display_name = filename
                 if display_name.startswith("Screen_"):
                     display_name = "Kiritilmagan rasm (" + display_name[7:23] + ")"
+                elif display_name.startswith("TextSnap_"):
+                    display_name = "O'qilgan Matn (" + display_name[9:25] + ")"
                 self.history_listbox.insert(tk.END, display_name)
                 
         except Exception as e:
@@ -520,13 +629,13 @@ class ScreenshotApp:
         # Try to parse properties from filename
         # Expected format: INN_Tashkilot_FISH_Tel.png
         parts = os.path.splitext(filename)[0].split("_", 3)
-        if len(parts) >= 2 and not filename.startswith("Screen_"):
+        if len(parts) >= 2 and not filename.startswith("Screen_") and not filename.startswith("TextSnap_"):
             details += f"INN: {parts[0]}\n"
             details += f"Tashkilot: {parts[1]}\n"
             if len(parts) >= 3: details += f"FISH: {parts[2]}\n"
             if len(parts) >= 4: details += f"Telefon: {parts[3].replace('Tel-', '')}\n"
         else:
-             details += "Holat: Aniqlanmagan (Yoki eski format)\n"
+             details += "Holat: Aniqlanmagan (Yoki eski format/Sof matn)\n"
              
         # Add OCR Text if available
         txt_path = os.path.splitext(file_path)[0] + ".txt"
