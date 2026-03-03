@@ -10,7 +10,7 @@ import subprocess
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.ui import apply_theme, ModernButton, BG_COLOR, FG_COLOR
-from app.utils import set_dpi_awareness, get_base_path, get_save_folder, setup_logging
+from app.utils import set_dpi_awareness, get_resource_path, get_save_folder, setup_logging
 from app.snipper import Snipper
 from app.editor import Editor
 
@@ -26,9 +26,15 @@ class ScreenshotApp:
         self.root.title("SMART SCANER TEXT & INN")
         self.root.geometry("1200x900")
         self.root.resizable(False, False)
-        
         set_dpi_awareness()
         apply_theme(self.root)
+        
+        # Set Window Icon
+        try:
+            icon_path = get_resource_path("app_icon.ico")
+            self.root.iconbitmap(icon_path)
+        except Exception as e:
+            logger.warning(f"Ikonani o'rnatishda xatolik: {e}")
         
         self.snipper = Snipper(root, self.on_capture)
         

@@ -13,17 +13,36 @@ def set_dpi_awareness():
         except Exception:
             pass
 
-def get_base_path():
-    """Returns the base path for resources, compatible with PyInstaller."""
+def get_app_dir():
+    """Returns the directory containing the executable or main.py"""
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_base_path():
+    """Returns the base path for resources. Maintained for compatibility."""
+    if getattr(sys, 'frozen', False):
+        return getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_resource_path(relative_path):
+    """
+    Get absolute path to a resource.
+    First checks next to the executable, then checks inside PyInstaller's _internal.
+    """
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        exe_path = os.path.join(exe_dir, relative_path)
+        if os.path.exists(exe_path):
+            return exe_path
+        return os.path.join(getattr(sys, '_MEIPASS', exe_dir), relative_path)
+    
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), relative_path)
 
 def get_save_folder():
     """Returns the path to the save folder, creating it if necessary."""
-    base_path = get_base_path()
-    project_root = os.path.dirname(base_path) 
-    save_folder = os.path.join(project_root, "ekran_rasimlar")
+    app_dir = get_app_dir()
+    save_folder = os.path.join(app_dir, "ekran_rasimlar")
     
     if not os.path.exists(save_folder):
         try:
@@ -34,9 +53,8 @@ def get_save_folder():
 
 def setup_logging():
     """Configures logging to write to debug.log in the project root."""
-    base_path = get_base_path()
-    project_root = os.path.dirname(base_path)
-    log_file = os.path.join(project_root, "debug.log")
+    app_dir = get_app_dir()
+    log_file = os.path.join(app_dir, "debug.log")
     
     logging.basicConfig(
         level=logging.DEBUG,

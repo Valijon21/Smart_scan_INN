@@ -189,8 +189,8 @@ def find_organization_in_text(text):
     
     # Load Data
     try:
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        json_path = os.path.join(base_path, "data.json")
+        from app.utils import get_resource_path
+        json_path = get_resource_path("data.json")
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e: 
@@ -357,8 +357,8 @@ def lookup_company_by_inn(inn):
     """Loads JSON and finds company name and person."""
     logger.debug(f"Looking up company by INN: {inn}")
     try:
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        json_path = os.path.join(base_path, "data.json")
+        from app.utils import get_resource_path
+        json_path = get_resource_path("data.json")
         
         if not os.path.exists(json_path):
              logger.error(f"JSON file not found at {json_path}")
@@ -392,8 +392,8 @@ def search_organizations(query):
     
     results = []
     try:
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        json_path = os.path.join(base_path, "data.json")
+        from app.utils import get_resource_path
+        json_path = get_resource_path("data.json")
         
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
